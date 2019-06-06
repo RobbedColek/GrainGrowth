@@ -5,7 +5,7 @@ object Form1: TForm1
   BorderStyle = bsDialog
   Caption = 'Grain Growth - Piotr Swat'
   ClientHeight = 929
-  ClientWidth = 800
+  ClientWidth = 1000
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -20,7 +20,7 @@ object Form1: TForm1
   object Image: TImage
     Left = 0
     Top = 129
-    Width = 800
+    Width = 1000
     Height = 800
     Align = alClient
     OnMouseDown = ImageMouseDown
@@ -31,13 +31,13 @@ object Form1: TForm1
   object MainMenu: TPanel
     Left = 0
     Top = 0
-    Width = 800
+    Width = 1000
     Height = 129
     Align = alTop
     TabOrder = 0
     object LblHeight: TLabel
       Left = 20
-      Top = 25
+      Top = 17
       Width = 31
       Height = 13
       Alignment = taCenter
@@ -45,14 +45,14 @@ object Form1: TForm1
     end
     object LblWidth: TLabel
       Left = 20
-      Top = 75
+      Top = 67
       Width = 28
       Height = 13
       Alignment = taCenter
       Caption = 'Width'
     end
     object BtnClear: TSpeedButton
-      Left = 680
+      Left = 888
       Top = 47
       Width = 97
       Height = 22
@@ -60,14 +60,14 @@ object Form1: TForm1
       Caption = 'Clear'
     end
     object BtnStart: TSpeedButton
-      Left = 680
+      Left = 888
       Top = 16
       Width = 97
       Height = 22
       Action = ActGrainGrowthTimer
     end
     object LblInterval: TLabel
-      Left = 680
+      Left = 888
       Top = 75
       Width = 38
       Height = 13
@@ -82,7 +82,7 @@ object Form1: TForm1
     end
     object LblBoundaryConditions: TLabel
       Left = 168
-      Top = 25
+      Top = 17
       Width = 99
       Height = 13
       Alignment = taCenter
@@ -90,7 +90,7 @@ object Form1: TForm1
     end
     object LblNucleation: TLabel
       Left = 168
-      Top = 75
+      Top = 67
       Width = 50
       Height = 13
       Alignment = taCenter
@@ -98,7 +98,7 @@ object Form1: TForm1
     end
     object LblNucleationVariable1: TLabel
       Left = 312
-      Top = 25
+      Top = 17
       Width = 74
       Height = 13
       Alignment = taCenter
@@ -106,7 +106,7 @@ object Form1: TForm1
     end
     object LblNucleationVariable2: TLabel
       Left = 312
-      Top = 75
+      Top = 67
       Width = 89
       Height = 13
       Alignment = taCenter
@@ -114,33 +114,64 @@ object Form1: TForm1
     end
     object LblNeighbourhoodType: TLabel
       Left = 456
-      Top = 25
+      Top = 17
       Width = 100
       Height = 13
       Caption = 'Neighbourhood Type'
     end
+    object BtnMonteCarlo: TSpeedButton
+      Left = 753
+      Top = 17
+      Width = 97
+      Height = 22
+      Action = ActMonteCarlo
+      Enabled = False
+    end
+    object LblKTParameter: TLabel
+      Left = 753
+      Top = 75
+      Width = 64
+      Height = 13
+      Alignment = taCenter
+      Caption = 'kT parameter'
+      Enabled = False
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object BtnMonteCarloDraw: TSpeedButton
+      Left = 753
+      Top = 47
+      Width = 97
+      Height = 22
+      Action = ActMonteCarloDraw
+      Enabled = False
+    end
     object EdtIterationsGameOfLife: TEdit
       Left = 20
-      Top = 44
+      Top = 36
       Width = 121
       Height = 21
       Alignment = taCenter
       NumbersOnly = True
       TabOrder = 0
-      Text = '200'
+      Text = '100'
     end
     object EdtWidthGameOfLife: TEdit
       Left = 20
-      Top = 94
+      Top = 86
       Width = 121
       Height = 21
       Alignment = taCenter
       NumbersOnly = True
       TabOrder = 1
-      Text = '200'
+      Text = '125'
     end
     object EdtInterval: TEdit
-      Left = 680
+      Left = 888
       Top = 94
       Width = 97
       Height = 21
@@ -150,7 +181,7 @@ object Form1: TForm1
     end
     object CmbBoundaryConditions: TComboBox
       Left = 168
-      Top = 44
+      Top = 36
       Width = 121
       Height = 21
       Style = csDropDownList
@@ -163,21 +194,23 @@ object Form1: TForm1
     end
     object EdtNucleationVariable1: TEdit
       Left = 312
-      Top = 44
+      Top = 36
       Width = 121
       Height = 21
       TabOrder = 4
+      Text = '20'
     end
     object EdtNucleationVariable2: TEdit
       Left = 312
-      Top = 94
+      Top = 86
       Width = 121
       Height = 21
       TabOrder = 5
+      Text = '25'
     end
     object CmbNucleation: TComboBox
       Left = 168
-      Top = 94
+      Top = 86
       Width = 121
       Height = 21
       Style = csDropDownList
@@ -193,7 +226,7 @@ object Form1: TForm1
     end
     object CmbNeighbourhoodType: TComboBox
       Left = 456
-      Top = 44
+      Top = 36
       Width = 121
       Height = 21
       Style = csDropDownList
@@ -209,10 +242,20 @@ object Form1: TForm1
         'Hexagonal (Random)'
         'Radial')
     end
+    object EdtKTParameter: TEdit
+      Left = 753
+      Top = 94
+      Width = 97
+      Height = 21
+      Alignment = taCenter
+      Enabled = False
+      TabOrder = 8
+      Text = '0.6'
+    end
   end
   object ActionList: TActionList
-    Left = 672
-    Top = 168
+    Left = 944
+    Top = 136
     object ActDraw: TAction
       Caption = 'Draw'
     end
@@ -228,11 +271,19 @@ object Form1: TForm1
       Caption = 'Start'
       OnExecute = ActGrainGrowthTimerExecute
     end
+    object ActMonteCarlo: TAction
+      Caption = 'Run Monte Carlo'
+      OnExecute = ActMonteCarloExecute
+    end
+    object ActMonteCarloDraw: TAction
+      Caption = 'Draw Energy'
+      OnExecute = ActMonteCarloDrawExecute
+    end
   end
   object TimerGrainGrowth: TTimer
     Enabled = False
     OnTimer = TimerGrainGrowthTimer
-    Left = 741
-    Top = 241
+    Left = 885
+    Top = 137
   end
 end

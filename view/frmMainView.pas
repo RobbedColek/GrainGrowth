@@ -35,8 +35,15 @@ type
     ActGrainGrowthTimer: TAction;
     CmbNeighbourhoodType: TComboBox;
     LblNeighbourhoodType: TLabel;
+    BtnMonteCarlo: TSpeedButton;
+    ActMonteCarlo: TAction;
+    LblKTParameter: TLabel;
+    EdtKTParameter: TEdit;
+    BtnMonteCarloDraw: TSpeedButton;
+    ActMonteCarloDraw: TAction;
     procedure ActClearExecute(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure DrawEnergy;
     procedure DrawGrid;
     procedure Draw;
     procedure ImageMouseDown(Sender: TObject; Button: TMouseButton;
@@ -45,6 +52,8 @@ type
     procedure ActClearButtonExecute(Sender: TObject);
     procedure CmbNucleationChange(Sender: TObject);
     procedure ActGrainGrowthTimerExecute(Sender: TObject);
+    procedure ActMonteCarloExecute(Sender: TObject);
+    procedure ActMonteCarloDrawExecute(Sender: TObject);
   private
     FCellularAutomata : TCellularAutomata;
 
@@ -58,6 +67,8 @@ var
 
 implementation
 
+uses
+  uUtils;
 {$R *.dfm}
 
 procedure TForm1.ActClearButtonExecute(Sender: TObject);
@@ -67,6 +78,12 @@ begin
   FCellularAutomata.Free;
   FCellularAutomata := TCellularAutomata.Create;
   FCellularAutomata.PrepareGridGameOfLife(StrToInt(EdtIterationsGameOfLife.Text), StrToInt(EdtWidthGameOfLife.Text));
+
+  BtnMonteCarlo.Enabled := False;
+  BtnMonteCarloDraw.Enabled := False;
+  EdtKTParameter.Enabled := False;
+  LblKTParameter.Enabled := False;
+  BtnMonteCarloDraw.Caption := 'Draw Energy';
 end;
 
 procedure TForm1.ActClearExecute(Sender: TObject);
@@ -110,8 +127,16 @@ begin
       y := y + Scale;
     end;
 
-    if CounterTmp = 0 then ActGrainGrowthTimer.Execute;
-
+    if CounterTmp = 0 then begin
+      TimerGrainGrowth.Enabled := False;
+      ActGrainGrowthTimer.Caption := 'Start';
+      EdtInterval.Enabled := True;
+      BtnClear.Enabled := True;
+      BtnMonteCarlo.Enabled := True;
+      BtnMonteCarloDraw.Enabled := True;
+      EdtKTParameter.Enabled := True;
+      LblKTParameter.Enabled := True;
+    end;
   end;
 end;
 
@@ -221,6 +246,76 @@ begin
     EdtInterval.Enabled := True;
     BtnClear.Enabled := True;
   end;
+end;
+
+procedure TForm1.DrawEnergy;
+var xScale, yScale, x, y, I, J, Width, Iterations, Scale, CounterTmp: Integer;
+begin
+  if Assigned(FCellularAutomata) then begin
+
+    CounterTmp := 0;
+
+    Image.Canvas.Pen.Color := clBlack;
+    Image.Canvas.Brush.Color := clBlack;
+
+    Width := StrToInt(EdtWidthGameOfLife.Text);
+    Iterations := StrToInt(EdtIterationsGameOfLife.Text);
+
+    xScale := Image.Width div Width;
+    yScale := Image.Height div StrToInt(EdtIterationsGameOfLife.Text);
+
+    if xScale > yScale then Scale := yScale else Scale := xScale;
+
+    y := 0;
+    for I := 0 to Iterations - 1 do begin
+      x := 0;
+      for J := 0 to Width - 1 do begin
+        if FCellularAutomata.GetValue(I, J) <> 0 then begin
+          case FCellularAutomata.CalculateEnergy(I, J, FCellularAutomata.GetValue(I, J)) of
+            0: Image.Canvas.Brush.Color := TUtils.ConvertHtmlHexToTColor('#FFA07A');
+            1: Image.Canvas.Brush.Color := TUtils.ConvertHtmlHexToTColor('#FA8072');
+            2: Image.Canvas.Brush.Color := TUtils.ConvertHtmlHexToTColor('#E9967A');
+            3: Image.Canvas.Brush.Color := TUtils.ConvertHtmlHexToTColor('#F08080');
+            4: Image.Canvas.Brush.Color := TUtils.ConvertHtmlHexToTColor('#CD5C5C');
+            5: Image.Canvas.Brush.Color := TUtils.ConvertHtmlHexToTColor('#DC143C');
+            6: Image.Canvas.Brush.Color := TUtils.ConvertHtmlHexToTColor('#B22222');
+            7: Image.Canvas.Brush.Color := TUtils.ConvertHtmlHexToTColor('#FF0000');
+          end;
+          Image.Canvas.Rectangle(x, y, x + Scale, y + Scale);
+        end;
+        x := x + Scale;
+      end;
+      y := y + Scale;
+    end;
+  end;
+end;
+
+procedure TForm1.ActMonteCarloDrawExecute(Sender: TObject);
+begin
+  if BtnMonteCarloDraw.Caption = 'Draw Energy' then begin
+    BtnMonteCarloDraw.Caption := 'Back';
+    actClear.Execute;
+    DrawEnergy;
+    BtnMonteCarlo.Enabled := False;
+  end else begin
+    BtnMonteCarloDraw.Caption := 'Draw Energy';
+    actClear.Execute;
+    Draw;
+    BtnMonteCarlo.Enabled := True;
+  end;
+end;
+
+procedure TForm1.ActMonteCarloExecute(Sender: TObject);
+begin
+  if (StrToFloat(EdtKTParameter.Text) < 0.1) or (StrToFloat(EdtKTParameter.Text) > 6.0) then begin
+    ShowMessage('kT parameter must be between 0.1 and 6.0');
+    EdtKTParameter.SetFocus;
+    Exit;
+  end;
+
+  FCellularAutomata.CalculateMonteCarlo(StrToFloat(EdtKTParameter.Text));
+  actClear.Execute;
+  Draw;
 end;
 
 procedure TForm1.CmbNucleationChange(Sender: TObject);
