@@ -198,6 +198,7 @@ begin
     FCellularAutomata.SetColor;
 
     ActClear.Execute;
+    DrawGrid;
     Draw;
   end;
 
@@ -209,6 +210,7 @@ begin
     FCellularAutomata.StepGrainGrowth;
 
     actClear.Execute;
+    DrawGrid;
     Draw;
   Except
     on E : Exception do

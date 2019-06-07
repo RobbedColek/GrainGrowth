@@ -289,7 +289,7 @@ begin
       if J = 0 then begin
         Prev := High(Grid[0]);
       end else
-      if J = High(Grid) then begin
+      if J = High(Grid[0]) then begin
         Next := Low(Grid[0]);
       end;
     end;
@@ -379,7 +379,7 @@ begin
       if J = 0 then begin
         Prev := High(Grid[0]);
       end else
-      if J = High(Grid) then begin
+      if J = High(Grid[0]) then begin
         Next := Low(Grid[0]);
       end;
     end;
@@ -424,8 +424,8 @@ begin
       if I = 0 then begin
         PrevRow := 0;
       end else
-      if I = High(Grid[0]) then begin
-        NextRow := High(Grid[0]);
+      if I = High(Grid) then begin
+        NextRow := High(Grid);
       end;
   end;
 
@@ -438,7 +438,7 @@ begin
       if J = 0 then begin
         Prev := High(Grid[0]);
       end else
-      if J = High(Grid) then begin
+      if J = High(Grid[0]) then begin
         Next := Low(Grid[0]);
       end;
     end;
@@ -497,7 +497,7 @@ begin
       if J = 0 then begin
         Prev := High(Grid[0]);
       end else
-      if J = High(Grid) then begin
+      if J = High(Grid[0]) then begin
         Next := Low(Grid[0]);
       end;
     end;
@@ -786,7 +786,7 @@ begin
       if J = 0 then begin
         Prev := High(Grid[0]);
       end else
-      if J = High(Grid) then begin
+      if J = High(Grid[0]) then begin
         Next := Low(Grid[0]);
       end;
     end;
