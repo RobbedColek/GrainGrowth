@@ -41,6 +41,8 @@ type
     EdtKTParameter: TEdit;
     BtnMonteCarloDraw: TSpeedButton;
     ActMonteCarloDraw: TAction;
+    BtnDRX: TSpeedButton;
+    ActDRX: TAction;
     procedure ActClearExecute(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure DrawEnergy;
@@ -54,8 +56,12 @@ type
     procedure ActGrainGrowthTimerExecute(Sender: TObject);
     procedure ActMonteCarloExecute(Sender: TObject);
     procedure ActMonteCarloDrawExecute(Sender: TObject);
+    procedure ActDRXExecute(Sender: TObject);
   private
     FCellularAutomata : TCellularAutomata;
+
+    Time : Extended;
+    Density : Extended;
 
     { Private declarations }
   public
@@ -84,6 +90,10 @@ begin
   EdtKTParameter.Enabled := False;
   LblKTParameter.Enabled := False;
   BtnMonteCarloDraw.Caption := 'Draw Energy';
+  BtnDRX.Enabled := False;
+
+  Density := 0;
+  Time := 0;
 end;
 
 procedure TForm1.ActClearExecute(Sender: TObject);
@@ -93,6 +103,14 @@ begin
   Image.Canvas.FillRect(Rect(0, 0, Image.Width, Image.Height));
 
   DrawGrid;
+end;
+
+procedure TForm1.ActDRXExecute(Sender: TObject);
+begin
+  Density := FCellularAutomata.CalculateDRX(Time, Density);
+  Time := Time + 0.001;
+
+  Draw;
 end;
 
 procedure TForm1.Draw;
@@ -132,6 +150,7 @@ begin
       ActGrainGrowthTimer.Caption := 'Start';
       EdtInterval.Enabled := True;
       BtnClear.Enabled := True;
+      BtnDRX.Enabled := True;
       BtnMonteCarlo.Enabled := True;
       BtnMonteCarloDraw.Enabled := True;
       EdtKTParameter.Enabled := True;
@@ -176,6 +195,9 @@ begin
 
   FCellularAutomata := TCellularAutomata.Create;
   FCellularAutomata.PrepareGridGameOfLife(StrToInt(EdtIterationsGameOfLife.Text), StrToInt(EdtWidthGameOfLife.Text));
+
+  Density := 0;
+  Time := 0;
 end;
 
 procedure TForm1.ImageMouseDown(Sender: TObject; Button: TMouseButton;
@@ -299,11 +321,13 @@ begin
     actClear.Execute;
     DrawEnergy;
     BtnMonteCarlo.Enabled := False;
+    BtnDRX.Enabled := False;
   end else begin
     BtnMonteCarloDraw.Caption := 'Draw Energy';
     actClear.Execute;
     Draw;
     BtnMonteCarlo.Enabled := True;
+    BtnDRX.Enabled := True;
   end;
 end;
 

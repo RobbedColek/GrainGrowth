@@ -150,6 +150,14 @@ object Form1: TForm1
       Action = ActMonteCarloDraw
       Enabled = False
     end
+    object BtnDRX: TSpeedButton
+      Left = 640
+      Top = 16
+      Width = 97
+      Height = 22
+      Action = ActDRX
+      Enabled = False
+    end
     object EdtIterationsGameOfLife: TEdit
       Left = 20
       Top = 36
@@ -279,11 +287,15 @@ object Form1: TForm1
       Caption = 'Draw Energy'
       OnExecute = ActMonteCarloDrawExecute
     end
+    object ActDRX: TAction
+      Caption = 'Run DRX'
+      OnExecute = ActDRXExecute
+    end
   end
   object TimerGrainGrowth: TTimer
     Enabled = False
     OnTimer = TimerGrainGrowthTimer
-    Left = 885
+    Left = 869
     Top = 137
   end
 end

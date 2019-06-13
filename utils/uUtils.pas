@@ -12,6 +12,7 @@ type
       class function GetRandomColor : TColor;
       class function ConvertHtmlHexToTColor(Color: String) : TColor;
       class function CheckHexForHash(col: string) : string;
+      class function BoolToInt(aValue : Boolean) : Integer;
 end;
 
 implementation
@@ -82,6 +83,11 @@ begin
     end;
 
     result := rColor;
+end;
+
+class function TUtils.BoolToInt(aValue : Boolean) : Integer;
+begin
+  if aValue then result := 1 else result := 0;
 end;
 
 end.

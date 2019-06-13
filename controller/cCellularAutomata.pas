@@ -11,6 +11,10 @@ type
       Grid : array of array of Integer;
       OldGrid : array of array of Integer;
       GridMonteCarlo : array of array of Boolean;
+
+      GridDensity : array of array of Extended;
+      GridIsCrystalized : array of array of Boolean;
+
       Colors : TList<TColor>;
 
       FWidth : Integer;
@@ -23,8 +27,13 @@ type
 
       procedure PrepareOldGrid;
       procedure PrepareMonteCarloGrid;
+      procedure PrepareGridDensity;
+      procedure PrepareGridIsCrystalized;
+
       procedure ClearOldGrid;
       procedure ClearMonteCarloGrid;
+      procedure CleanGridDensity;
+      procedure CleanGridIsCrystalized;
     public
       function GetValue(I, J : Integer) : Integer;
       procedure SetValue(I, J, Value : Integer);
@@ -42,6 +51,12 @@ type
       procedure CalculateHexagonalRight(I, J : Integer);
       procedure CalculateHexagonalRandom(I, J : Integer);
       procedure CalculateRadial(I, J : Integer);
+
+      function CalculateDRX(Time, Density : Extended) : Extended;
+      function HasNeighbour(I, J, pValue : Integer) : Boolean;
+      procedure NucleateCrystalized;
+      function HasNeighbourRecrystalized(I, J : Integer) : Integer;
+      function HasGreatestDensityAmongNeighbours(I, J : Integer) : Boolean;
 
       procedure SetNucleation(NucleationIndex, Variable1, Variable2 : Integer);
       procedure SetValuesForRadialNucleation(I, J, Radius : Integer);
@@ -540,6 +555,245 @@ begin
 // TODO
 end;
 
+function TCellularAutomata.CalculateDRX(Time, Density : Extended) : Extended;
+var A : Extended;
+    B : Extended;
+    ro, detRo, mediumRo, recrystalizationPackage, randomPackage, roCritical : Extended;
+    I, J, randI, randJ, chance, tmp : Integer;
+begin
+  Result := 0;
+
+  A := 86710969050178.5;
+  B := 9.41268203527779;
+
+  NucleateCrystalized;
+
+  ro := (A/B) + (1 - (A/B))* Power(Exp(1.0), (-B*Time));
+  detRo := Abs(ro - Density);
+
+  recrystalizationPackage := detRo / ((High(Grid) + 1) * (High(Grid[0]) + 1)) * 0.2;
+
+  for I := Low(Grid) to High(Grid) do begin
+    for J := Low(Grid[0]) to High(Grid[0]) do begin
+      GridDensity[I][J] := GridDensity[I][J] + recrystalizationPackage;
+    end;
+  end;
+
+  detRo := detRo - recrystalizationPackage;
+
+  while detRo > 0 do begin
+    randI := Random(High(Grid) + 1);
+    randJ := Random(High(Grid[0]) + 1);
+
+    randomPackage := detRo * Random;
+    chance := Random(10);
+
+    if HasNeighbour(randI, randJ, Grid[randI][randJ]) then begin
+      if chance in [2..10] then begin
+        GridDensity[randI][randJ] := GridDensity[randI][randJ] + randomPackage;
+        detRo := detRo - randomPackage;
+      end;
+    end else begin
+      if chance in [0..1] then begin
+        GridDensity[randI][randJ] := GridDensity[randI][randJ] + randomPackage;
+        detRo := detRo - randomPackage;
+      end;
+    end;
+  end;
+
+  ClearOldGrid;
+
+  roCritical := ro / ((High(Grid) + 1) * (High(Grid[0]) + 1));
+  for I := Low(Grid) to High(Grid) do begin
+    for J := Low(Grid[0]) to High(Grid[0]) do begin
+      if HasNeighbour(I, J, Grid[I][J]) and
+      (GridDensity[I][J] > roCritical) and
+      (not GridIsCrystalized[I][J]) then
+      begin
+        SetValue(I, J, Colors.Count);
+        SetColor;
+        GridIsCrystalized[I][J] := True;
+        GridDensity[I][J] := 0.0;
+        OldGrid[I][J] := 1;
+      end;
+    end;
+  end;
+
+  for I := Low(Grid) to High(Grid) do begin
+    for J := Low(Grid[0]) to High(Grid[0]) do begin
+      tmp := HasNeighbourRecrystalized(I, J);
+      if (tmp <> 0) and (OldGrid[I][J] = 0) then begin
+        if HasGreatestDensityAmongNeighbours(I, J) then begin
+          SetValue(I, J, tmp);
+          GridIsCrystalized[I][J] := True;
+          GridDensity[I][J] := 0.0;
+        end;
+      end;
+    end;
+  end;
+
+  Result := ro;
+end;
+
+function TCellularAutomata.HasNeighbour(I, J, pValue : Integer) : Boolean;
+var
+  topCenterI,
+  centerLeftI, centerRightI,
+  botCenterI : Integer;
+
+  topCenterJ,
+  centerLeftJ, centerRightJ,
+  botCenterJ : Integer;
+begin
+  Result := False;
+
+  topCenterI := I - 1;
+  if topCenterI < 0 then topCenterI := High(Grid);
+  topCenterJ := J;
+
+  centerLeftI := I;
+  centerLeftJ := J - 1;
+  if centerLeftJ < 0 then centerLeftJ := High(Grid[0]);
+
+  centerRightI := I;
+  centerRightJ := J + 1;
+  if centerRightJ > High(Grid[0]) then centerRightJ := 0;
+
+  botCenterI := I + 1;
+  if botCenterI > High(Grid) then botCenterI := 0;
+  botCenterJ := J;
+
+  if Grid[topCenterI][topCenterJ] <> pValue then Result := True;
+  if Grid[centerLeftI][centerLeftJ] <> pValue then Result := True;
+  if Grid[botCenterI][botCenterJ] <> pValue then Result := True;
+  if Grid[centerRightI][centerRightJ] <> pValue then Result := True;
+end;
+
+function TCellularAutomata.HasNeighbourRecrystalized(I, J : Integer) : Integer;
+var
+  topCenterI,
+  centerLeftI, centerRightI,
+  botCenterI : Integer;
+
+  topCenterJ,
+  centerLeftJ, centerRightJ,
+  botCenterJ : Integer;
+begin
+  Result := 0;
+
+  topCenterI := I - 1;
+  if topCenterI < 0 then topCenterI := High(Grid);
+  topCenterJ := J;
+
+  centerLeftI := I;
+  centerLeftJ := J - 1;
+  if centerLeftJ < 0 then centerLeftJ := High(Grid[0]);
+
+  centerRightI := I;
+  centerRightJ := J + 1;
+  if centerRightJ > High(Grid[0]) then centerRightJ := 0;
+
+  botCenterI := I + 1;
+  if botCenterI > High(Grid) then botCenterI := 0;
+  botCenterJ := J;
+
+  if GridIsCrystalized[topCenterI][topCenterJ] = True then Result := Grid[topCenterI][topCenterJ];
+  if GridIsCrystalized[centerLeftI][centerLeftJ] = True then Result := Grid[centerLeftI][centerLeftJ];
+  if GridIsCrystalized[botCenterI][botCenterJ] = True then Result := Grid[botCenterI][botCenterJ];
+  if GridIsCrystalized[centerRightI][centerRightJ] = True then Result := Grid[centerRightI][centerRightJ];
+end;
+
+function TCellularAutomata.HasGreatestDensityAmongNeighbours(I, J : Integer) : Boolean;
+var
+  topCenterI,
+  centerLeftI, centerRightI,
+  botCenterI : Integer;
+
+  topCenterJ,
+  centerLeftJ, centerRightJ,
+  botCenterJ : Integer;
+begin
+  Result := True;
+
+  topCenterI := I - 1;
+  if topCenterI < 0 then topCenterI := High(Grid);
+  topCenterJ := J;
+
+  centerLeftI := I;
+  centerLeftJ := J - 1;
+  if centerLeftJ < 0 then centerLeftJ := High(Grid[0]);
+
+  centerRightI := I;
+  centerRightJ := J + 1;
+  if centerRightJ > High(Grid[0]) then centerRightJ := 0;
+
+  botCenterI := I + 1;
+  if botCenterI > High(Grid) then botCenterI := 0;
+  botCenterJ := J;
+
+  if GridDensity[topCenterI][topCenterJ] < GridDensity[I][J] then Result := False;
+  if GridDensity[centerLeftI][centerLeftJ] < GridDensity[I][J] then Result := False;
+  if GridDensity[botCenterI][botCenterJ] < GridDensity[I][J] then Result := False;
+  if GridDensity[centerRightI][centerRightJ] < GridDensity[I][J] then Result := False;
+end;
+
+procedure TCellularAutomata.NucleateCrystalized;
+var
+  I, J : Integer;
+
+  topCenterI,
+  centerLeftI, centerRightI,
+  botCenterI : Integer;
+
+  topCenterJ,
+  centerLeftJ, centerRightJ,
+  botCenterJ : Integer;
+begin
+
+  for I := Low(Grid) to High(Grid) do begin
+    for J := Low(Grid[0]) to High(Grid[0]) do begin
+      if GridIsCrystalized[I][J] then begin
+        topCenterI := I - 1;
+        if topCenterI < 0 then topCenterI := High(Grid);
+        topCenterJ := J;
+
+        centerLeftI := I;
+        centerLeftJ := J - 1;
+        if centerLeftJ < 0 then centerLeftJ := High(Grid[0]);
+
+        centerRightI := I;
+        centerRightJ := J + 1;
+        if centerRightJ > High(Grid[0]) then centerRightJ := 0;
+
+        botCenterI := I + 1;
+        if botCenterI > High(Grid) then botCenterI := 0;
+        botCenterJ := J;
+
+        if not GridIsCrystalized[topCenterI][topCenterJ] then begin
+          Grid[topCenterI][topCenterJ] := Grid[I][J];
+          GridDensity[topCenterI][topCenterJ] := 0.0;
+        end;
+
+        if not GridIsCrystalized[centerLeftI][centerLeftJ] then begin
+          Grid[centerLeftI][centerLeftJ] := Grid[I][J];
+          GridDensity[centerLeftI][centerLeftJ] := 0.0;
+        end;
+
+        if not GridIsCrystalized[botCenterI][botCenterJ] then begin
+          Grid[botCenterI][botCenterJ] := Grid[I][J];
+          GridDensity[botCenterI][botCenterJ] := 0.0;
+        end;
+
+        if not GridIsCrystalized[centerRightI][centerRightJ] then begin
+          Grid[centerRightI][centerRightJ] := Grid[I][J];
+          GridDensity[centerRightI][centerRightJ] := 0.0;
+        end;
+      end;
+    end;
+  end;
+
+end;
+
 procedure TCellularAutomata.CalculateMonteCarlo(kT : Double);
 var
   RandomI, RandomJ : Integer;
@@ -918,7 +1172,27 @@ begin
   SetLength(GridMonteCarlo, High(Grid) + 1);
   for I := 0 to High(Grid) do begin
     SetLength(GridMonteCarlo[I], High(Grid[I]) + 1);
-    for J := 0 to High(Grid[I]) do OldGrid[I][J] := 0;
+    for J := 0 to High(Grid[I]) do GridMonteCarlo[I][J] := False;
+  end;
+end;
+
+procedure TCellularAutomata.PrepareGridDensity;
+var I, J : Integer;
+begin
+  SetLength(GridDensity, High(Grid) + 1);
+  for I := 0 to High(Grid) do begin
+    SetLength(GridDensity[I], High(Grid[I]) + 1);
+    for J := 0 to High(Grid[I]) do GridDensity[I][J] := 0.0;
+  end;
+end;
+
+procedure TCellularAutomata.PrepareGridIsCrystalized;
+var I, J : Integer;
+begin
+  SetLength(GridIsCrystalized, High(Grid) + 1);
+  for I := 0 to High(Grid) do begin
+    SetLength(GridIsCrystalized[I], High(Grid[I]) + 1);
+    for J := 0 to High(Grid[I]) do GridIsCrystalized[I][J] := False;
   end;
 end;
 
@@ -927,6 +1201,22 @@ var I, J : Integer;
 begin
   for I := 0 to High(GridMonteCarlo) do begin
     for J := 0 to High(GridMonteCarlo[I]) do GridMonteCarlo[I][J] := False;
+  end;
+end;
+
+procedure TCellularAutomata.CleanGridDensity;
+var I, J : Integer;
+begin
+  for I := 0 to High(GridDensity) do begin
+    for J := 0 to High(GridDensity[I]) do GridDensity[I][J] := 0.0;
+  end;
+end;
+
+procedure TCellularAutomata.CleanGridIsCrystalized;
+var I, J : Integer;
+begin
+  for I := 0 to High(GridIsCrystalized) do begin
+    for J := 0 to High(GridIsCrystalized[I]) do GridIsCrystalized[I][J] := False;
   end;
 end;
 
@@ -943,6 +1233,8 @@ begin
 
   PrepareOldGrid;
   PrepareMonteCarloGrid;
+  PrepareGridDensity;
+  PrepareGridIsCrystalized;
 end;
 
 function TCellularAutomata.GetValue(I, J: Integer): Integer;
